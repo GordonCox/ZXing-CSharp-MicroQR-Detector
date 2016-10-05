@@ -1,0 +1,1 @@
+# ZXing-CSharp-MicroQR-Detector
