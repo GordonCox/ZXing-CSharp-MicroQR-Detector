@@ -18,10 +18,10 @@ using System;
 
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Linq;
 using ZXing.Common;
 using ZXing.Common.Detector;
+
 
 namespace ZXing.MicroQrCode.Internal
 {
@@ -110,8 +110,8 @@ namespace ZXing.MicroQrCode.Internal
             {
 
                 //Added for debugging
-                var orignalImageAsBitMap = GetBitmap(image);
-                orignalImageAsBitMap.Save(@"C:\Data\originalImage.bmp");
+                //var orignalImageAsBitMap = GetBitmap(image);
+                //orignalImageAsBitMap.Save(@"C:\Data\originalImage.bmp");
 
                 DetectorResult microQrDetectorResult = DetectMicroQrCode(info.TopLeft);
 
@@ -434,16 +434,17 @@ namespace ZXing.MicroQrCode.Internal
         /// <param name="centerPoint"></param>
         /// <param name="scale"></param>
         /// <returns></returns>
-        private ResultPoint[] ScalePoints(ResultPoint[] resultPoints, ResultPoint centerPoint,
+        private ResultPoint[] ScalePointsMatrix(ResultPoint[] resultPoints, ResultPoint centerPoint,
             float scale)
         {
-
+            return null;
+            /*
             Point[] points = new Point[resultPoints.Length];
             for (int i = 0; i < resultPoints.Length; i++)
             {
                 points[i] = new Point((int)resultPoints[i].X, (int)resultPoints[i].Y);
             }
-
+            Math.
             // Create a matrix and scale it.
             Matrix myMatrix = new Matrix();
 
@@ -459,6 +460,39 @@ namespace ZXing.MicroQrCode.Internal
                 resultPointsAndRotation[i] = resultPoint;
             }
             return resultPointsAndRotation;
+            */
+        }
+
+        private ResultPoint[] ShiftPoints(ResultPoint[] resultPoints, ResultPoint shift)
+        {
+            ResultPoint[] returnPoints = new ResultPoint[resultPoints.Length];
+            for (int i = 0; i < resultPoints.Length; i ++)
+            {
+                resultPoints[i] = new ResultPoint(resultPoints[i].X - shift.X, resultPoints[i].Y - shift.Y);
+            }
+            return resultPoints;
+        }
+
+        private ResultPoint[] ScalePoints(ResultPoint[] resultPoints, ResultPoint centerPoint,
+            float scale)
+        {
+            ResultPoint[] returnPoints = new ResultPoint[resultPoints.Length];
+            //float scaleX = (float)width / boundingPoints.width;
+            //float scaleY = (float)height / boundingPoints.height;
+            float scaleX = scale;
+            float scaleY = scale;
+            float bx = centerPoint.X;
+            float by = centerPoint.Y;
+
+            for (int i = 0; i < resultPoints.Length; i++)
+            {
+                float x1 = ((resultPoints[i].X - bx) * scaleX);
+                x1 += bx;
+                float y1 = ((resultPoints[i].Y - by) * scaleY);
+                y1 += by;
+                returnPoints[i] = new ResultPoint((int)x1, (int)y1);
+            }
+            return returnPoints;
         }
 
         private ResultPoint[] OrderPoints(IEnumerable<ResultPoint> points)
@@ -583,6 +617,16 @@ namespace ZXing.MicroQrCode.Internal
             //of the finder pattern
             float innerSquareScaleFactor = (float)(moduleSize * 6) / outerSquareDistance;
 
+            //Multiply the modules size by 10.5 so that the edges are inside the first 
+            //black module of the timing pattern along two edges of the square
+            float largestBarcodeScaleFactor = (float)(moduleSize * 18) / outerSquareDistance;
+
+            //Scale back half a module from the center so that we are 
+            //in the middle of the outer black square for the finder pattern.
+            var largestBarcodeSquarePoints = ScalePoints(finderPatternPoints, topLeft, largestBarcodeScaleFactor);
+            largestBarcodeSquarePoints = OrderPoints(largestBarcodeSquarePoints);
+
+
             //Scale back half a module from the center so that we are 
             //in the middle of the outer black square for the finder pattern.
             var innerSquarePoints = ScalePoints(finderPatternPoints, topLeft, innerSquareScaleFactor);
@@ -632,6 +676,17 @@ namespace ZXing.MicroQrCode.Internal
             //TODO I might need to revise this logic even though it appears to work correctly.
             var finderPatternOuterThreeCornerPoints = GetThreeCornerResultPoints(finderPatternPoints, outerWhiteSquareTopLeft);
 
+
+            //Find the difference between finderPatternTopLeft and largestBarcodeTopLeft
+            //Shift all of the largestBarcodeTopLeft by the difference of the (x,y)
+            //This is the largest possible size of a Micro QR Code.
+            //TODO Uses the outerWhiteSquarePoint to find the three points that are closest to it and orders them
+            //TODO I might need to revise this logic even though it appears to work correctly.
+            var largestBarcodeThreeCornerPoints = GetThreeCornerResultPoints(largestBarcodeSquarePoints, outerWhiteSquareTopLeft);
+            var xShift = largestBarcodeThreeCornerPoints[1].X - finderPatternOuterThreeCornerPoints[1].X;
+            var yShift = largestBarcodeThreeCornerPoints[1].Y - finderPatternOuterThreeCornerPoints[1].Y;
+            largestBarcodeSquarePoints = ShiftPoints(largestBarcodeSquarePoints, new ResultPoint(xShift, yShift));
+ //           var test = string.Empty;
             //As long as this is true we are in good shape.
             //Technically this should not matter.
             //var isRightTriangle = IsRightTriangle(finderPatternOuterThreeCornerPoints[1], finderPatternOuterThreeCornerPoints[2], finderPatternOuterThreeCornerPoints[0]);
@@ -653,6 +708,10 @@ namespace ZXing.MicroQrCode.Internal
             var extendedTopRight = ExtendVertex(innerThreeCornerPoints[1], innerThreeCornerPoints[2], extendLength);
             var extendedBottomLeft = ExtendVertex(innerThreeCornerPoints[1], innerThreeCornerPoints[0], extendLength);
 
+            //Sweep Logic does not work here as I do not want the farthest away point.
+            //ResultPoint sweepExtendedTopRight = SweepAngle(innerThreeCornerPoints[1], extendedTopRight, moduleSize);
+            //ResultPoint sweepExtemdedBottomLeft = SweepAngle(innerThreeCornerPoints[1], extendedBottomLeft, moduleSize);
+
             //Now it would be good to get the last black on the line and recalculate the extended points (top right and bottom left)
 
             var topRightTransition = transitionsBetween(innerThreeCornerPoints[1], extendedTopRight);
@@ -668,7 +727,7 @@ namespace ZXing.MicroQrCode.Internal
             bottomLeftTransition = transitionsBetween(innerThreeCornerPoints[1], bottomLeftEndTimingPattern);
             var bottomLeftStartLastModule = bottomLeftTransition.StartLastModule;
             //The number of transitions should be the same.
-            if (topRightTransition.Transitions != bottomLeftTransition.Transitions)
+            if (topRightTransition.Transitions != bottomLeftTransition.Transitions || bottomLeftTransition.Transitions == 0)
             {
                 //Bad
                 return null;
@@ -752,6 +811,65 @@ namespace ZXing.MicroQrCode.Internal
             }
             return maxDistance;
         }
+        /*
+        private void GetNonNullPoints(List<ResultPointsAndRotation> allOuterSquarePoints)
+        {
+
+            var maxUniquePoints = allOuterSquarePoints.GroupBy(u => u.Point).Select(grp => new
+            {
+                Point = grp.Key,
+                Count = grp.Count()
+
+            }).Max(a => a.Count);
+
+            if (maxUniquePoints == 1)
+                maxUniquePoints = 4;
+
+            int takeAmount = (int)maxUniquePoints * 4;
+
+            bool GotAllFour = false;
+            while (!GotAllFour)
+            {
+                //Select the fartheset away points (the corner points)
+                //Order the points by distance and take the points so that they can be averaged.
+                IEnumerable<ResultPointsAndRotation> topFourOuterSquarePoints =
+                    allOuterSquarePoints.OrderByDescending(x => x.Distance).Take(takeAmount).ToList();
+                List<ResultPointsAndRotation> nextSet = topFourOuterSquarePoints.ToList();
+                var lessThanTenDegrees = DegreeToRadian(10);
+
+                //Selcts the points within 10 degrees of each other.
+                if (nextSet.Count > 0)
+                {
+                    IEnumerable<ResultPointsAndRotation> cornerA = GetPointsWithinDegrees(centerPoint,
+                        nextSet.FirstOrDefault().Point, topFourOuterSquarePoints, lessThanTenDegrees);
+                }
+                nextSet.RemoveAll(x => cornerA.Contains(x));
+
+                if (nextSet.Count > 0)
+                {
+                    IEnumerable<ResultPointsAndRotation> cornerB = GetPointsWithinDegrees(centerPoint,
+                        nextSet.FirstOrDefault().Point, topFourOuterSquarePoints, lessThanTenDegrees);
+                }
+                nextSet.RemoveAll(x => cornerB.Contains(x));
+
+                if (nextSet.Count > 0)
+                {
+                    IEnumerable<ResultPointsAndRotation> cornerC = GetPointsWithinDegrees(centerPoint,
+                        nextSet.FirstOrDefault().Point, topFourOuterSquarePoints, lessThanTenDegrees);
+                }
+
+                nextSet.RemoveAll(x => cornerC.Contains(x));
+
+                if (nextSet.Count > 0)
+                {
+                    IEnumerable<ResultPointsAndRotation> cornerD = GetPointsWithinDegrees(centerPoint,
+                        nextSet.FirstOrDefault().Point, topFourOuterSquarePoints, lessThanTenDegrees);
+                    GotAllFour = true;
+                }
+                takeAmount ++;
+            }
+        }
+        */
 
         private ResultPoint[] CalculateFinderPatternPoints(ResultPoint centerPoint)
         {
@@ -801,23 +919,54 @@ namespace ZXing.MicroQrCode.Internal
 
             int takeAmount = (int)maxUniquePoints * 4;
 
-            //Select the fartheset away points (the corner points)
-            //Order the points by distance and take the points so that they can be averaged.
-            IEnumerable<ResultPointsAndRotation> topFourOuterSquarePoints = allOuterSquarePoints.OrderByDescending(x => x.Distance).Take(takeAmount).ToList();
-            List<ResultPointsAndRotation> nextSet = topFourOuterSquarePoints.ToList();
-            var lessThanTenDegrees = DegreeToRadian(10);
+            bool GotAllFour = false;
+            IEnumerable<ResultPointsAndRotation> cornerA = null;
+            IEnumerable<ResultPointsAndRotation> cornerB = null;
+            IEnumerable<ResultPointsAndRotation> cornerC = null;
+            IEnumerable<ResultPointsAndRotation> cornerD = null;
+            while (!GotAllFour)
+            {
+                //Select the fartheset away points (the corner points)
+                //Order the points by distance and take the points so that they can be averaged.
+                IEnumerable<ResultPointsAndRotation> topFourOuterSquarePoints =
+                    allOuterSquarePoints.OrderByDescending(x => x.Distance).Take(takeAmount).ToList();
+                List<ResultPointsAndRotation> nextSet = topFourOuterSquarePoints.ToList();
+                var lessThanTenDegrees = DegreeToRadian(10);
 
-            //Selcts the points within 10 degrees of each other.
-            IEnumerable<ResultPointsAndRotation> cornerA = GetPointsWithinDegrees(centerPoint, nextSet.FirstOrDefault().Point, topFourOuterSquarePoints, lessThanTenDegrees);
-            nextSet.RemoveAll(x => cornerA.Contains(x));
+                //Selcts the points within 10 degrees of each other.
+                if (nextSet.Count > 0)
+                {
+                    cornerA = GetPointsWithinDegrees(centerPoint,
+                        nextSet.FirstOrDefault().Point, topFourOuterSquarePoints, lessThanTenDegrees);
+                    nextSet.RemoveAll(x => cornerA.Contains(x));
+                }
 
-            IEnumerable<ResultPointsAndRotation> cornerB = GetPointsWithinDegrees(centerPoint, nextSet.FirstOrDefault().Point, topFourOuterSquarePoints, lessThanTenDegrees);
-            nextSet.RemoveAll(x => cornerB.Contains(x));
 
-            IEnumerable<ResultPointsAndRotation> cornerC = GetPointsWithinDegrees(centerPoint, nextSet.FirstOrDefault().Point, topFourOuterSquarePoints, lessThanTenDegrees);
-            nextSet.RemoveAll(x => cornerC.Contains(x));
+                if (nextSet.Count > 0)
+                {
+                    cornerB = GetPointsWithinDegrees(centerPoint,
+                        nextSet.FirstOrDefault().Point, topFourOuterSquarePoints, lessThanTenDegrees);
+                    nextSet.RemoveAll(x => cornerB.Contains(x));
+                }
+                
 
-            IEnumerable<ResultPointsAndRotation> cornerD = GetPointsWithinDegrees(centerPoint, nextSet.FirstOrDefault().Point, topFourOuterSquarePoints, lessThanTenDegrees);
+                if (nextSet.Count > 0)
+                {
+                    cornerC = GetPointsWithinDegrees(centerPoint,
+                        nextSet.FirstOrDefault().Point, topFourOuterSquarePoints, lessThanTenDegrees);
+                    nextSet.RemoveAll(x => cornerC.Contains(x));
+                }
+
+
+
+                if (nextSet.Count > 0)
+                {
+                    cornerD = GetPointsWithinDegrees(centerPoint,
+                        nextSet.FirstOrDefault().Point, topFourOuterSquarePoints, lessThanTenDegrees);
+                    GotAllFour = true;
+                }
+                takeAmount++;
+            }
 
             //Average the points together for each corner.
             var outerSquarePoints = new ResultPointsAndRotation[4];
@@ -825,7 +974,36 @@ namespace ZXing.MicroQrCode.Internal
             outerSquarePoints[1] = GetAverage(cornerB);
             outerSquarePoints[2] = GetAverage(cornerC);
             outerSquarePoints[3] = GetAverage(cornerD);
+            /*
+            List<ResultPointsAndRotation> refinedSquarePoints = new List<ResultPointsAndRotation>();
+            foreach (ResultPointsAndRotation outerSquarePoint in outerSquarePoints)
+            {
+                var refinePointAngleInRadians = ComputeAngle(centerPoint, outerSquarePoint.Point);
+                var refineCalculatedResultPoint = GetResultPointAtAngleAndDistance(centerPoint, refinePointAngleInRadians, maxDistance);
 
+                var refineDistance = sizeOfBlackWhiteBlackRun((int) centerPoint.X, (int) centerPoint.Y,(int) refineCalculatedResultPoint.X, (int) refineCalculatedResultPoint.Y);
+                refinedSquarePoints.Add(
+                    new ResultPointsAndRotation(
+                        GetResultPointAtAngleAndDistance(centerPoint, refinePointAngleInRadians, refineDistance), refinePointAngleInRadians,
+                        refineDistance));
+            }
+
+            //All of these points must be the same distance from the center.
+            //Average the distance and caculate the points for that distance.
+            var finalDistance = GetAverage(refinedSquarePoints).Distance;
+            List<ResultPointsAndRotation> finalSquarePoints = new List<ResultPointsAndRotation>();
+            foreach (ResultPointsAndRotation finalSquarePoint in refinedSquarePoints)
+            {
+                var finalPointAngleInRadians = ComputeAngle(centerPoint, finalSquarePoint.Point);
+                var finalCalculatedResultPoint = GetResultPointAtAngleAndDistance(centerPoint, finalPointAngleInRadians, (float)finalDistance);
+
+                finalSquarePoints.Add(
+                    new ResultPointsAndRotation(finalCalculatedResultPoint, finalPointAngleInRadians,finalDistance));
+            }
+
+            var points = finalSquarePoints.Select(x => x.Point).ToArray();
+            //var points = refinedSquarePoints.Select(x => x.Point).ToArray();
+            */
             var points = outerSquarePoints.Select(x => x.Point).ToArray();
             //Sort the results so that corner A[0] is across from D[3]
             //And corner B[1] is across from C[2]
@@ -1105,7 +1283,7 @@ namespace ZXing.MicroQrCode.Internal
             var e = c * c;
             return Math.Ceiling(e) == Math.Ceiling(d);
         }
-
+        /*
         private Bitmap GetBitmap(BitMatrix image)
         {
             var bitmap = new Bitmap(image.Width, image.Height);
@@ -1128,7 +1306,8 @@ namespace ZXing.MicroQrCode.Internal
             }
             return bitmap;
         }
-
+        */
+        /*
         private BitMatrix GetBitMatrix(Bitmap bitmap)
         {
             BitMatrix bitMatrix = new BitMatrix(bitmap.Width, bitmap.Height);
@@ -1152,7 +1331,7 @@ namespace ZXing.MicroQrCode.Internal
             }
             return bitMatrix;
         }
-
+        */
         private double RadianToDegree(double angle)
         {
             return angle * (180.0 / Math.PI);

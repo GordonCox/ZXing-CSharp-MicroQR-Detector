@@ -29,7 +29,7 @@ namespace ZXing.QrCode.Test
             
          addTest(18, 18, 0.0f);     // Java: addTest(17, 17, 0.0f);
          addTest(15, 15, 90.0f);    // Java: addTest(14, 14, 0.0f);
-         addTest(17, 17, 180.0f);   // Java: addTest(17, 17, 0.0f);  //Image 3 fails at 18 degree's 
+         addTest(17, 17, 180.0f);   // Java: addTest(17, 17, 0.0f);  //Image 3.png fails at 180 degree's 
          addTest(15, 15, 270.0f);   // Java: addTest(14, 14, 0.0f);
       }
    }

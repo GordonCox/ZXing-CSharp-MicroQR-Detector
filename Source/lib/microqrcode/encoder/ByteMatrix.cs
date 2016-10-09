@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Drawing.Imaging;
+//using System.Drawing.Imaging;
 using System.Drawing;
 using System.Runtime.InteropServices;
 
@@ -116,7 +116,7 @@ namespace ZXing.MicroQrCode.Internal
             }
             return result.ToString();
         }
-
+        /*
         /// <summary>
         /// Converts this ByteMatrix to a black and white bitmap.
         /// </summary>
@@ -156,5 +156,6 @@ namespace ZXing.MicroQrCode.Internal
             //Return the bitmap
             return bmp;
         }
+        */
     }
 }

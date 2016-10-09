@@ -86,17 +86,21 @@ namespace ZXing.MicroQrCode
                 decoderResult = decoder.decode(detectorResult.Bits, hints);
                 points = detectorResult.Points;
             }
-			
-			Result result = new Result(decoderResult.Text, decoderResult.RawBytes, points, BarcodeFormat.MICRO_QR_CODE);
-			if (decoderResult.ByteSegments != null)
-			{
-				result.putMetadata(ResultMetadataType.BYTE_SEGMENTS, decoderResult.ByteSegments);
-			}
-			if (decoderResult.ECLevel != null)
-			{
-				result.putMetadata(ResultMetadataType.ERROR_CORRECTION_LEVEL, decoderResult.ECLevel.ToString());
-			}
-			return result;
+            if (decoderResult != null && decoderResult.Text != null && decoderResult.RawBytes != null)
+            {
+                Result result = new Result(decoderResult.Text, decoderResult.RawBytes, points,
+                    BarcodeFormat.MICRO_QR_CODE);
+                if (decoderResult.ByteSegments != null)
+                {
+                    result.putMetadata(ResultMetadataType.BYTE_SEGMENTS, decoderResult.ByteSegments);
+                }
+                if (decoderResult.ECLevel != null)
+                {
+                    result.putMetadata(ResultMetadataType.ERROR_CORRECTION_LEVEL, decoderResult.ECLevel.ToString());
+                }
+                return result;
+            }
+            return null;
 		}
 
         /// <summary>

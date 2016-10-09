@@ -19,7 +19,7 @@ using ZXing.MicroQrCode.Internal;
 using ErrorCorrectionLevel = ZXing.QrCode.Internal.ErrorCorrectionLevel;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
+//using System.Drawing.Imaging;
 using Encoder = ZXing.MicroQrCode.Internal.Encoder;
 
 namespace ZXing.MicroQrCode

@@ -14,6 +14,8 @@
     <AssemblyName>zxing.monoandroid</AssemblyName>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\..\Key\private.snk</AssemblyOriginatorKeyFile>
+    <AndroidUseLatestPlatformSdk>True</AndroidUseLatestPlatformSdk>
+    <TargetFrameworkVersion>v6.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>True</DebugSymbols>
@@ -114,6 +116,7 @@
     <Compile Include="common\BitArray.cs" />
     <Compile Include="common\BitMatrix.cs" />
     <Compile Include="common\BitSource.cs" />
+    <Compile Include="common\ByteArray.cs" />
     <Compile Include="common\CharacterSetECI.cs" />
     <Compile Include="common\DecoderResult.cs" />
     <Compile Include="common\DecodingOptions.cs" />
@@ -169,6 +172,30 @@
     <Compile Include="IMultipleBarcodeReader.cs" />
     <Compile Include="IMultipleBarcodeReaderGeneric.cs" />
     <Compile Include="InvertedLuminanceSource.cs" />
+    <Compile Include="microqrcode\decoder\BitMatrixParser.cs" />
+    <Compile Include="microqrcode\decoder\DataBlock.cs" />
+    <Compile Include="microqrcode\decoder\DataMask.cs" />
+    <Compile Include="microqrcode\decoder\DecodedBitStreamParser.cs" />
+    <Compile Include="microqrcode\decoder\Decoder.cs" />
+    <Compile Include="microqrcode\decoder\FormatInformation.cs" />
+    <Compile Include="microqrcode\decoder\Mode.cs" />
+    <Compile Include="microqrcode\decoder\Version.cs" />
+    <Compile Include="microqrcode\detector\AlignmentPattern.cs" />
+    <Compile Include="microqrcode\detector\AlignmentPatternFinder.cs" />
+    <Compile Include="microqrcode\detector\Detector.cs" />
+    <Compile Include="microqrcode\detector\FinderPattern.cs" />
+    <Compile Include="microqrcode\detector\FinderPatternFinder.cs" />
+    <Compile Include="microqrcode\detector\FinderPatternInfo.cs" />
+    <Compile Include="microqrcode\encoder\BitVector.cs" />
+    <Compile Include="microqrcode\encoder\BlockPair.cs" />
+    <Compile Include="microqrcode\encoder\ByteMatrix.cs" />
+    <Compile Include="microqrcode\encoder\Encoder.cs" />
+    <Compile Include="microqrcode\encoder\MaskUtil.cs" />
+    <Compile Include="microqrcode\encoder\MatrixUtil.cs" />
+    <Compile Include="microqrcode\encoder\MicroQRCode.cs" />
+    <Compile Include="microqrcode\encoder\MicroQRCodeEncodingOptions.cs" />
+    <Compile Include="microqrcode\MicroQRCodeReader.cs" />
+    <Compile Include="microqrcode\MicroQRCodeWriter.cs" />
     <Compile Include="LuminanceSource.cs" />
     <Compile Include="maxicode\decoder\BitMatrixParser.cs" />
     <Compile Include="maxicode\decoder\DecodedBitStreamParser.cs" />
