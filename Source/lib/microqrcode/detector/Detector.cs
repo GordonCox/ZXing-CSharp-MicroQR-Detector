@@ -1133,14 +1133,20 @@ namespace ZXing.MicroQrCode.Internal
         public float GetBlackAtAngleAndDistance(ResultPoint center, double radians, float distance)
         {
             bool isBlack = false;
-            while (!isBlack)
+            while (!isBlack && distance > 1)
             {
                 var newBottomRightX = center.X + Math.Cos(radians)*distance;
                 var newBottomRightY = center.Y + Math.Sin(radians)*distance;
+                if (isValid(new ResultPoint((int) newBottomRightX, (int) newBottomRightY)))
+                {
+                    isBlack = image[(int) newBottomRightX, (int) newBottomRightY];
 
-                isBlack = image[(int)newBottomRightX, (int)newBottomRightY];
-
-                if (!isBlack)
+                    if (!isBlack)
+                    {
+                        distance = distance - 1.0f;
+                    }
+                }
+                else
                 {
                     distance = distance - 1.0f;
                 }
